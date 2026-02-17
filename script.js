@@ -1,22 +1,41 @@
-function loadPDF(file) {
-    document.getElementById("pdfFrame").src =
-        file + "#toolbar=0&navpanes=0&scrollbar=0";
+const container = document.getElementById("pdfContainer");
+let pdfDoc = null;
+let scale = 1.3;
+
+function loadPDF(url) {
+    container.innerHTML = "";
+
+    pdfjsLib.getDocument(url).promise.then(pdf => {
+        pdfDoc = pdf;
+        for (let i = 1; i <= pdf.numPages; i++) {
+            renderPage(i);
+        }
+    });
 }
 
-const pdfFrame = document.getElementById("pdfFrame");
+function renderPage(num) {
+    pdfDoc.getPage(num).then(page => {
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
 
-/* Block right click ONLY on the PDF */
-pdfFrame.addEventListener("contextmenu", function (e) {
-    e.preventDefault();
-});
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        canvas.style.marginBottom = "20px";
 
-/* Block Save & Print only */
-document.addEventListener("keydown", function (e) {
-    if (
-        (e.ctrlKey && e.key.toLowerCase() === "s") ||
-        (e.ctrlKey && e.key.toLowerCase() === "p")
-    ) {
-        e.preventDefault();
-        alert("This action is disabled");
+        container.appendChild(canvas);
+
+        page.render({ canvasContext: ctx, viewport });
+    });
+}
+
+/* Block everything */
+document.addEventListener("contextmenu", e => e.preventDefault());
+document.addEventListener("keydown", e => {
+    if (e.ctrlKey || e.metaKey) {
+        if (["s", "p", "u", "c", "x", "a"].includes(e.key.toLowerCase())) {
+            e.preventDefault();
+            alert("This action is disabled");
+        }
     }
 });
